@@ -1,0 +1,25 @@
+{
+  "name": "chialab-sidenav",
+  "version": "0.0.1",
+  "authors": [
+    "Chia Lab s.r.l. <dev@chialab.it> (http://www.chialab.it)"
+  ],
+  "description": "A mobile friendly sidenav implementation.",
+  "main": "dist/sidenav.min.js",
+  "private": true,
+  "ignore": [
+      "**/.*",
+      "Gruntfile.js",
+      "node_modules",
+      "bower_components",
+      "src",
+      "test",
+      "tests",
+      "dist/sidenav.js",
+      "dist/**/*.map"
+  ],
+  "dependencies": {
+    "classList.js": "git@github.com:eligrey/classList.js.git",
+    "chialab-gestures": "git@gitlab.com:chialab/gestures-js.git#~0.0.1"
+  }
+}

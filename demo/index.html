@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>SideNav</title>
+        <script src="../bower_components/classList.js/classList.min.js" charset="utf-8"></script>
+        <script src="../bower_components/chialab-gestures/dist/gestures.min.js" charset="utf-8"></script>
+        <script src="../dist/sidenav.min.js" charset="utf-8"></script>
+        <link rel="stylesheet" href="../dist/sidenav.min.css" media="screen" charset="utf-8">
+    </head>
+    <body style="overflow-x: hidden;">
+        <button onclick="nav.toggle(event)">Toggle Left</button>
+        <button onclick="nav2.toggle(event)" style="float: right">Toggle Right</button>
+        <nav id="left">
+            <button onclick="nav.toggle(event)">Toggle</button>
+        </nav>
+        <nav id="right">
+            <button onclick="nav2.toggle(event)">Toggle</button>
+        </nav>
+        <script type="text/javascript">
+            var nav = new SideNav( document.querySelector('nav#left') ),
+                nav2 = new SideNav( document.querySelector('nav#right'), {
+                    'open': true,
+                    'position': 'right'
+                });
+        </script>
+    </body>
+</html>

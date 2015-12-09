@@ -1,0 +1,22 @@
+{
+  "name": "chialab-sidenav",
+  "version": "0.0.1",
+  "description": "A mobile friendly sidenav implementation.",
+  "repository": {
+    "type": "git",
+    "url": "https://gitlab.com/chialab/sidenav-widget"
+  },
+  "main": "dist/sidenav.min.js",
+  "scripts": {
+    "build": "bower install && grunt build"
+  },
+  "author": "Chia Lab s.r.l. <dev@chialab.it> (http://www.chialab.it)",
+  "devDependencies": {
+    "grunt": "^0.4.5",
+    "grunt-contrib-clean": "^0.7.0",
+    "grunt-contrib-concat": "^0.5.1",
+    "grunt-contrib-cssmin": "^0.14.0",
+    "grunt-contrib-uglify": "^0.11.0",
+    "load-grunt-tasks": "^3.3.0"
+  }
+}
