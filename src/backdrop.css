@@ -1,0 +1,57 @@
+.back-drop {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: #000;
+    opacity: 0.55;
+    animation: backDropIn 0.3s;
+    -webkit-animation: backDropIn 0.3s;
+    transform: translateZ(0px);
+    -webkit-transform: translateZ(0px);
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+}
+
+.back-drop--hide {
+    animation: backDropOut 0.3s;
+    -webkit-animation: backDropOut 0.3s;
+    opacity: 0;
+}
+
+@-webkit-keyframes backDropIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 0.55;
+    }
+}
+
+@keyframes backDropIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 0.55;
+    }
+}
+
+@-webkit-keyframes backDropOut {
+    from {
+        opacity: 0.55;
+    }
+    to {
+        opacity: 0;
+    }
+}
+
+@keyframes backDropOut {
+    from {
+        opacity: 0.55;
+    }
+    to {
+        opacity: 0;
+    }
+}

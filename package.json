@@ -1,22 +1,39 @@
 {
   "name": "chialab-sidenav",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "A mobile friendly sidenav implementation.",
   "repository": {
     "type": "git",
-    "url": "https://gitlab.com/chialab/sidenav-widget"
+    "url": "https://github.com/Chialab/sidenav-js"
   },
-  "main": "dist/sidenav.min.js",
+  "main": "index.js",
+  "build": {
+    "exportDefault": true,
+    "bundleName": "sidenav.js",
+    "globalName": "SideNav",
+    "globalDeps": {
+      "dna/components": "DNA",
+      "chialab/gestures": "Gestures"
+    }
+  },
+  "license": "MIT",
   "scripts": {
-    "build": "bower install && grunt build"
+    "build": "node ./node_modules/es6-workflow/scripts/build.js",
+    "test": "node ./node_modules/es6-workflow/scripts/test.js",
+    "doc": "node ./node_modules/es6-workflow/scripts/doc.js",
+    "add-editorconfig": "node ./node_modules/es6-workflow/scripts/add-editorconfig.js",
+    "add-eslint": "node ./node_modules/es6-workflow/scripts/add-eslint.js",
+    "add-travis": "node ./node_modules/es6-workflow/scripts/add-travis.js",
+    "codecov": "node ./node_modules/es6-workflow/scripts/codecov.js",
+    "coveralls": "node ./node_modules/es6-workflow/scripts/coveralls.js",
+    "test-ci": "node ./node_modules/es6-workflow/scripts/test-ci.js"
   },
-  "author": "Chia Lab s.r.l. <dev@chialab.it> (http://www.chialab.it)",
+  "author": "Chialab <dev@chialab.io> (http://www.chialab.com)",
   "devDependencies": {
-    "grunt": "^0.4.5",
-    "grunt-contrib-clean": "^0.7.0",
-    "grunt-contrib-concat": "^0.5.1",
-    "grunt-contrib-cssmin": "^0.14.0",
-    "grunt-contrib-uglify": "^0.11.0",
-    "load-grunt-tasks": "^3.3.0"
+    "es6-workflow": "^0.4.6"
+  },
+  "dependencies": {
+    "chialab-gestures": "^1.1.0",
+    "dna-components": "^1.2.0"
   }
 }

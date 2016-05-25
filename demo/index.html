@@ -4,10 +4,9 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>SideNav</title>
-        <script src="../bower_components/classList.js/classList.min.js" charset="utf-8"></script>
-        <script src="../bower_components/chialab-gestures/dist/gestures.min.js" charset="utf-8"></script>
-        <script src="../dist/sidenav.min.js" charset="utf-8"></script>
-        <link rel="stylesheet" href="../dist/sidenav.min.css" media="screen" charset="utf-8">
+        <script src="../node_modules/dna-components/lib/dna.js"></script>
+        <script src="../node_modules/chialab-gestures/dist/gestures.js"></script>
+        <script src="../dist/sidenav.js"></script>
     </head>
     <body style="overflow-x: hidden;">
         <button onclick="nav.toggle(event)">Toggle Left</button>
@@ -19,11 +18,14 @@
             <button onclick="nav2.toggle(event)">Toggle</button>
         </nav>
         <script type="text/javascript">
-            var nav = new SideNav( document.querySelector('nav#left') ),
-                nav2 = new SideNav( document.querySelector('nav#right'), {
-                    'open': true,
-                    'position': 'right'
-                });
+            var leftElement = document.querySelector('nav#left');
+            var rightElement = document.querySelector('nav#right');
+            var nav = new SideNav(leftElement);
+            var nav2 = new SideNav(rightElement);
+            nav2.options = {
+                'open': true,
+                'position': 'right'
+            };
         </script>
     </body>
 </html>

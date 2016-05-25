@@ -1,410 +1,248 @@
-(function (scope) {
-    // https://gist.github.com/Integralist/3938408
-    var Animation = (function(){
-        /*
-            webkitAnimationName => Safari/Chrome
-            MozAnimationName => Mozilla Firefox
-            OAnimationName => Opera
-            animationName => compliant browsers (inc. IE10)
-         */
-        var supported = false;
-        var prefixes = ['webkit', 'Moz', 'O', ''];
-        var limit = prefixes.length;
-        var doc = document.documentElement.style;
-        var prefix, start, end;
+import Gestures from 'chialab/gestures';
+import { register, DNABaseComponent } from 'dna/components';
+import { TransitionSupport } from './helpers/transition-support.js';
+import { UI } from './helpers/ui.js';
+import { BackDrop } from './backdrop.js';
+import css from './sidenav.css';
 
-        while (limit--) {
-            // If the compliant browser check (in this case an empty string value) then we need to check against different string (animationName and not prefix + AnimationName)
-            if (!prefixes[limit]) {
-                // If not undefined then we've found a successful match
-                if (doc['animationName'] !== undefined) {
-                    prefix = prefixes[limit];
-                    start = 'animationstart';
-                    end = 'animationend';
-                    supported = true;
-                    break;
-                }
-            }
-            // Other brower prefixes to be checked
-            else {
-                // If not undefined then we've found a successful match
-                if (doc[prefixes[limit] + 'AnimationName'] !== undefined) {
-                    prefix = prefixes[limit];
+let current;
+let lastEvent;
+let sidenavs = [];
 
-                    switch (limit) {
-                        case 0:
-                            //  webkitAnimationStart && webkitAnimationEnd
-                            start = prefix.toLowerCase() + 'AnimationStart';
-                            end = prefix.toLowerCase() + 'AnimationEnd';
-                            supported = true;
-                            break;
+const BACK_DROP = new BackDrop();
+BACK_DROP.onTap(() => {
+    if (current) {
+        current.hide();
+    }
+});
 
-                        case 1:
-                            // animationstart && animationend
-                            start = 'animationstart';
-                            end = 'animationend';
-                            supported = true;
-                            break;
-
-                        case 2:
-                            // oanimationstart && oanimationend
-                            start = prefix.toLowerCase() + 'animationstart';
-                            end = prefix.toLowerCase() + 'animationend';
-                            supported = true;
-                            break;
-                    }
-
-                    break;
-                }
-            }
-        }
-
-        return {
-            supported: supported,
-            prefix: prefix,
-            start: start,
-            end: end
-        };
-    })();
-
-    var Transition = (function(){
-        /*
-            webkitTransition => Safari/Chrome
-            MozTransition => Mozilla Firefox
-            OTransition => Opera
-            transition => compliant browsers (inc. IE10)
-         */
-        var supported = false;
-        var prefixes = ['webkit', 'Moz', 'O', ''];
-        var limit = prefixes.length;
-        var doc = document.documentElement.style;
-        var prefix, start, end;
-
-        while (limit--) {
-            // If the compliant browser check (in this case an empty string value) then we need to check against different string (animationName and not prefix + AnimationName)
-            if (!prefixes[limit]) {
-                // If not undefined then we've found a successful match
-                if (doc['transition'] !== undefined) {
-                    prefix = prefixes[limit];
-                    start = 'transitionstart';
-                    end = 'transitionend';
-                    supported = true;
-                    break;
-                }
-            }
-            // Other brower prefixes to be checked
-            else {
-                // If not undefined then we've found a successful match
-                if (doc[prefixes[limit] + 'Transition'] !== undefined) {
-                    prefix = prefixes[limit];
-
-                    switch (limit) {
-                        case 0:
-                            //  webkitTransitionStart && webkitTransitionEnd
-                            start = prefix.toLowerCase() + 'TransitionStart';
-                            end = prefix.toLowerCase() + 'TransitionEnd';
-                            supported = true;
-                            break;
-
-                        case 1:
-                            // animationstart && animationend
-                            start = 'transitionstart';
-                            end = 'transitionend';
-                            supported = true;
-                            break;
-
-                        case 2:
-                            // otransitionstart && otransitionend
-                            start = prefix.toLowerCase() + 'transitionstart';
-                            end = prefix.toLowerCase() + 'transitionend';
-                            supported = true;
-                            break;
-                    }
-
-                    break;
-                }
-            }
-        }
-
-        return {
-            supported: supported,
-            prefix: prefix,
-            start: start,
-            end: end
-        };
-    })();
-
-    function _animationEnd(element, callback, timeout) {
-        timeout = timeout || 300;
-        if (Animation.supported) {
-            function onEnd() {
-                callback.call(element);
-                element.removeEventListener(Animation.end, onEnd);
-            }
-            element.addEventListener(Animation.end, onEnd);
+function _onDragStop(sidenav) {
+    if (sidenav.swiping) {
+        sidenav.swiping = false;
+        let options = sidenav.options;
+        let element = sidenav;
+        if (sidenav.__saveStyle) {
+            element.setAttribute('style', sidenav.__saveStyle);
         } else {
-            window.setTimeout(callback, timeout);
+            element.removeAttribute('style');
         }
-    }
-
-    function _transitionEnd(element, callback, timeout) {
-        timeout = timeout || 300;
-        if (Transition.supported) {
-            function onEnd() {
-                callback.call(element);
-                element.removeEventListener(Transition.end, onEnd);
-            }
-            element.addEventListener(Transition.end, onEnd);
+        delete sidenav.__saveStyle;
+        element.classList.remove(options.swipeClass);
+        if ((lastEvent.ddx >= 0 && options.position === 'left') ||
+            (lastEvent.ddx <= 0 && options.position === 'right')) {
+            sidenav.show();
         } else {
-            window.setTimeout(callback, timeout);
-        }
-    }
-
-    function BackDrop () {
-        var drop = document.createElement('div');
-            drop.classList.add(BackDrop.dropClass);
-
-        this.element = drop;
-    }
-
-    BackDrop.dropClass = 'back-drop';
-
-    BackDrop.dropHiddenClass = BackDrop.dropClass + '--hide';
-
-    BackDrop.prototype.show = function () {
-        if (BackDrop.current !== this) {
-            if (BackDrop.current) {
-                BackDrop.current.hide();
+            if (!current) {
+                BACK_DROP.hide();
             }
-            var drop = this.element;
-
-            if (document.body.firstElementChild) {
-                document.body.insertBefore(drop, document.body.firstElementChild);
-            } else {
-                document.body.appendChild(drop);
-            }
-            BackDrop.current = this;
+            sidenav.hide(true);
         }
     }
+}
 
-    BackDrop.prototype.onTap = function (callback) {
-        if (callback) {
-            scope.Gestures.addEventListener(this.element, 'tap', callback);
-        } else {
-            scope.Gestures.removeEventListener(this.element, 'tap');
-        }
-    }
-
-    BackDrop.prototype.hide = function () {
-        var that = this,
-            drop = that.element;
-        _animationEnd(drop, function () {
-            drop.parentNode.removeChild(drop);
-            drop.classList.remove(BackDrop.dropHiddenClass);
-        });
-        drop.classList.add(BackDrop.dropHiddenClass);
-        if (BackDrop.current === this) {
-            BackDrop.current = undefined;
-        }
-    }
-
-    function _onDrag(sidenav, ev) {
-        var options = sidenav.options, element = sidenav.element;
-        if (sidenav.swiping || options.open
-                || (ev.dx > 0 && options.position == 'left' && ev.x <= options.swipeSensibility)
-                || (ev.dx < 0 && options.position == 'right' && window.innerWidth - ev.x <= options.swipeSensibility)) {
-            if (!sidenav.swiping) {
-                element.style.display = 'block';
-                sidenav.__saveStyle = sidenav.element.getAttribute('style');
-                sidenav.element.classList.add(options.swipeClass);
-                if (!options.open) {
-                    sidenav.element.classList.remove(options.hiddenClass);
-                    SideNav.backDrop.show();
-                }
-                sidenav.swiping = true;
-            }
-            var x;
+function _onDrag(sidenav, ev) {
+    let options = sidenav.options;
+    let element = sidenav;
+    if (sidenav.swiping ||
+        options.open ||
+        (
+            ev.dx > 0 && options.position === 'left' &&
+            ev.x <= options.swipeSensibility) ||
+        (
+            ev.dx < 0 && options.position === 'right' &&
+            window.innerWidth - ev.x <= options.swipeSensibility)) {
+        if (!sidenav.swiping) {
+            element.style.display = 'block';
+            sidenav.__saveStyle = sidenav.getAttribute('style');
+            sidenav.classList.add(options.swipeClass);
             if (!options.open) {
-                if (options.position == 'left') {
-                    x = Math.min( -Math.max(element.offsetWidth - ev.dx, -element.offsetWidth), 0);
-                } else {
-                    x = Math.max(Math.min(element.offsetWidth + ev.dx, element.offsetWidth), 0);
-                }
-            } else {
-                if (options.position == 'left') {
-                    x = Math.max(Math.min(ev.dx, 0), -element.offsetWidth);
-                } else {
-                    x = Math.min(Math.max(ev.dx, 0), element.offsetWidth);
-                }
+                sidenav.classList.remove(options.hiddenClass);
+                BACK_DROP.show();
             }
-            element.style.webkitTransform = element.style.transform = 'translate3d(' + x + 'px, 0, 0)';
-            if ((options.position == 'left' && x <= -element.offsetWidth) || (options.position == 'right' && x >= element.offsetWidth)) {
-                _onDragStop(sidenav, ev);
+            sidenav.swiping = true;
+        }
+        let x;
+        if (!options.open) {
+            if (options.position === 'left') {
+                x = Math.min(-Math.max(element.offsetWidth - ev.dx, -element.offsetWidth), 0);
+            } else {
+                x = Math.max(Math.min(element.offsetWidth + ev.dx, element.offsetWidth), 0);
             }
         } else {
-            sidenav.swiping = false;
-        }
-    }
-
-    function _onDragStop(sidenav, ev) {
-        if (sidenav.swiping) {
-            sidenav.swiping = false;
-            var options = sidenav.options, element = sidenav.element;
-            if (sidenav.__saveStyle) {
-                element.setAttribute('style', sidenav.__saveStyle);
+            if (options.position === 'left') {
+                x = Math.max(Math.min(ev.dx, 0), -element.offsetWidth);
             } else {
-                element.removeAttribute('style');
-            }
-            delete sidenav.__saveStyle;
-            element.classList.remove(options.swipeClass);
-            if (SideNav.lastEvent.ddx >= 0 && options.position == 'left' || SideNav.lastEvent.ddx <= 0 && options.position == 'right') {
-                sidenav.show();
-            } else {
-                if (!SideNav.current) {
-                    SideNav.backDrop.hide();
-                }
-                sidenav.hide(true);
+                x = Math.min(Math.max(ev.dx, 0), element.offsetWidth);
             }
         }
+        element.style.webkitTransform = element.style.transform = `translate3d(${x}px, 0, 0)`;
+        if ((options.position === 'left' && x <= -element.offsetWidth) ||
+            (options.position === 'right' && x >= element.offsetWidth)) {
+            _onDragStop(sidenav, ev);
+        }
+    } else {
+        sidenav.swiping = false;
+    }
+}
+
+function _mergeOptions(defaults, options) {
+    options = options || {};
+    for (let k in defaults) {
+        if (options[k] === undefined) {
+            options[k] = defaults[k];
+        }
+    }
+    options.positionClass = `${options.class}--${options.position}`;
+    options.hiddenClass = `${options.class}--hide`;
+    options.transitionClass = `${options.class}--transition`;
+    options.swipeClass = `${options.class}--swiping`;
+    return options;
+}
+
+export class SideNavComponent extends DNABaseComponent {
+    static get css() {
+        return css;
     }
 
-    var defaults = {
-        'class': 'sidenav',
-        'position': 'left',
-        'swipe': true,
-        'swipeSensibility': 50,
+    static add(obj) {
+        if (!this.listening && obj.options.swipe) {
+            this.listen();
+        }
+        sidenavs.push(obj);
     }
 
-    function _options(options) {
-        options = options || {};
-        for (var k in defaults) {
-            if (options[k] === undefined) {
-                options[k] = defaults[k];
-            }
-        }
-        options.positionClass = options['class'] + '--' + options['position'];
-        options.hiddenClass = options['class'] + '--hide';
-        options.transitionClass = options['class'] + '--transition';
-        options.swipeClass = options['class'] + '--swiping';
-        return options;
-    }
-
-    function SideNav(element, options) {
-        var that = this;
-        options = _options(options);
-        if (element instanceof HTMLElement) {
-            options.element = element;
-        }
-        that.options = options;
-        that.element = options.element;
-        that.element.isSideNav = true;
-        that.element.classList.add(options['class']);
-        that.element.classList.add(options['positionClass']);
-        if (options.open) {
-            that.show(true);
-        } else {
-            that.hide(true);
-        }
-        that.useTransition = true;
-        that.element.classList.add(options['transitionClass']);
-        SideNav.add(that);
-    }
-
-    SideNav.backDrop = new BackDrop();
-    SideNav.backDrop.onTap(function () {
-        if (SideNav.current) {
-            SideNav.current.hide();
-        }
-    });
-
-    SideNav.add = function(obj) {
-        SideNav.sidenavs = SideNav.sidenavs || [];
-        if (!SideNav.listening && obj.options.swipe) {
-            SideNav.listen();
-        }
-        SideNav.sidenavs.push(obj);
-    }
-
-    SideNav.listen = function () {
+    static listen() {
         if (!this.listening) {
             this.listening = true;
-            scope.Gestures.addEventListener(document, 'track', function (ev) {
-                var sidenavs = SideNav.current ? [SideNav.current] : SideNav.sidenavs;
-                for (var k = 0, len = sidenavs.length; k < len; k++) {
-                    var sn = sidenavs[k];
+            Gestures.addEventListener(document, 'track', (ev) => {
+                let _sidenavs = current ? [current] : sidenavs;
+                for (let k = 0, len = _sidenavs.length; k < len; k++) {
+                    let sn = _sidenavs[k];
                     if (sn.options.swipe) {
-                        if (ev.state == 'track') {
-                            SideNav.lastEvent = ev;
+                        if (ev.state === 'track') {
+                            lastEvent = ev;
                             _onDrag(sn, ev);
-                        } else if (ev.state == 'end') {
+                        } else if (ev.state === 'end') {
                             _onDragStop(sn, ev);
                         }
                     }
                 }
-                if (ev.state == 'end') {
-                    delete SideNav.lastEvent;
+                if (ev.state === 'end') {
+                    lastEvent = undefined;
                 }
             });
         }
     }
 
-    SideNav.prototype.show = function SideNavShow(force) {
-        if (SideNav.current && SideNav.current !== this) {
-            SideNav.current.hide();
+    get defaultOptions() {
+        return {
+            class: 'sidenav',
+            position: 'left',
+            swipe: true,
+            swipeSensibility: 50,
+        };
+    }
+
+    get options() {
+        return this.__options || {};
+    }
+
+    set options(options) {
+        let _old = this.options;
+        let _options = _mergeOptions(this.defaultOptions, options);
+        this.__options = _options;
+        if (_options.class !== _old.class) {
+            if (_old.class) {
+                this.classList.remove(_old.class);
+            }
+            this.classList.add(_options.class);
         }
-        var that = this, options = this.options, element = this.element;
+        if (_options.positionClass !== _old.positionClass) {
+            if (_old.positionClass) {
+                this.classList.remove(_old.positionClass);
+            }
+            this.classList.add(_options.positionClass);
+        }
+        this.useTransitionSupport = false;
+        if (_options.open) {
+            this.show(true);
+        } else {
+            this.hide(true);
+        }
+        this.useTransitionSupport = true;
+        if (_options.transitionClass !== _old.transitionClass) {
+            if (_old.transitionClass) {
+                this.classList.remove(_old.transitionClass);
+            }
+            this.classList.add(_options.transitionClass);
+        }
+    }
+
+    createdCallback() {
+        this.options = this.defaultOptions;
+        SideNavComponent.add(this);
+    }
+
+    show(force) {
+        if (current && current !== this) {
+            current.hide();
+        }
+        let options = this.options;
         if (!options.open || force) {
             options.open = true;
-            element.style.display = 'block';
-            element.offsetWidth; //force redraw
-            element.classList.remove(options.hiddenClass);
-            SideNav.backDrop.show();
-            SideNav.current = that;
+            this.style.display = 'block';
+            if (this.offsetWidth) {
+                // force redraw
+            }
+            if (options.hiddenClass) {
+                this.classList.remove(options.hiddenClass);
+            }
+            BACK_DROP.show();
+            current = this;
             if (!force) {
-                var event = document.createEvent('Event');
-                    event.initEvent('open', true, false);
-                element.dispatchEvent(event);
+                this.trigger('open');
             }
         }
     }
 
-    SideNav.prototype.hide = function SideNavHide(force) {
-        var that = this, options = this.options, element = this.element;
+    hide(force) {
+        let options = this.options;
         if (options.open || force) {
             options.open = false;
-            if (that.useTransition && Transition.supported) {
-                _transitionEnd(element, function () {
-                    element.style.display = 'none';
+            if (this.useTransitionSupport && TransitionSupport.supported) {
+                UI.transitionEnd(this, () => {
+                    this.style.display = 'none';
                 });
             } else {
-                element.style.display = 'none';
+                this.style.display = 'none';
             }
-            element.classList.add(options.hiddenClass);
-            if (SideNav.current === that) {
-                SideNav.current = undefined;
-                SideNav.backDrop.hide();
+            if (options.hiddenClass) {
+                this.classList.add(options.hiddenClass);
+            }
+            if (current === this) {
+                current = undefined;
+                BACK_DROP.hide();
             }
             if (!force) {
-                var event = document.createEvent('Event');
-                    event.initEvent('close', true, false);
-                element.dispatchEvent(event);
+                this.trigger('close');
             }
         }
     }
 
-    SideNav.prototype.toggle = function SideNavToggle() {
+    toggle() {
         if (this.options.open) {
             this.hide();
         } else {
             this.show();
         }
     }
+}
 
-    // export
-    if (typeof module !== 'undefined' && module.exports) {
-        module.exports = SideNav;
-    } else {
-        scope.SideNav = SideNav;
-    }
+export const SideNav = register('side-nav', {
+    prototype: SideNavComponent,
+});
 
-})(this);
+
+export const create = function(...args) {
+    return new SideNav(...args);
+};
