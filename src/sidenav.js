@@ -1,4 +1,4 @@
-import Gestures from 'chialab/gestures';
+import Gestures from 'chialab/gestures/index.js';
 import { register, DNABaseComponent } from 'dna/components';
 import { TransitionSupport } from './helpers/transition-support.js';
 import { UI } from './helpers/ui.js';

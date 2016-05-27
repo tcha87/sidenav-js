@@ -11,7 +11,7 @@
             },
         },
         paths: {
-            'chialab/gestures': './node_modules/chialab-gestures/dist/gestures.js',
+            'chialab/*': './node_modules/chialab-*',
             'dna/components': './node_modules/dna-components/lib/dna.js',
         },
     });
