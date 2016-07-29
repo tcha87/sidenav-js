@@ -30,7 +30,7 @@
   },
   "author": "Chialab <dev@chialab.io> (http://www.chialab.com)",
   "devDependencies": {
-    "es6-workflow": "^0.4.6"
+    "es6-workflow": "latest"
   },
   "dependencies": {
     "chialab-gestures": "^1.1.0",
