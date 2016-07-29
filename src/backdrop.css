@@ -6,6 +6,7 @@
     height: 100%;
     background-color: #000;
     opacity: 0.55;
+    will-change: opacity;
     animation: backDropIn 0.3s;
     -webkit-animation: backDropIn 0.3s;
     transform: translateZ(0px);

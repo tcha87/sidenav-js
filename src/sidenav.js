@@ -5,45 +5,31 @@ import { UI } from './helpers/ui.js';
 import { BackDrop } from './backdrop.js';
 import css from './sidenav.css';
 
-let current;
-let lastEvent;
 let sidenavs = [];
 
-const BACK_DROP = new BackDrop();
-BACK_DROP.onTap(() => {
-    if (current) {
-        current.hide();
-    }
-});
-
-function _onDragStop(sidenav) {
-    if (sidenav.swiping) {
-        sidenav.swiping = false;
-        let options = sidenav.options;
-        let element = sidenav;
-        if (sidenav.__saveStyle) {
-            element.setAttribute('style', sidenav.__saveStyle);
+function _onDragStop(lastEvent) {
+    if (this.swiping) {
+        this.swiping = false;
+        let options = this.options;
+        if (this.__saveStyle) {
+            this.setAttribute('style', this.__saveStyle);
         } else {
-            element.removeAttribute('style');
+            this.removeAttribute('style');
         }
-        delete sidenav.__saveStyle;
-        element.classList.remove(options.swipeClass);
+        delete this.__saveStyle;
+        this.classList.remove(options.swipeClass);
         if ((lastEvent.ddx >= 0 && options.position === 'left') ||
             (lastEvent.ddx <= 0 && options.position === 'right')) {
-            sidenav.show();
+            this.show();
         } else {
-            if (!current) {
-                BACK_DROP.hide();
-            }
-            sidenav.hide(true);
+            this.hide(true);
         }
     }
 }
 
-function _onDrag(sidenav, ev) {
-    let options = sidenav.options;
-    let element = sidenav;
-    if (sidenav.swiping ||
+function _onDrag(ev, lastEvent) {
+    let options = this.options;
+    if (this.swiping ||
         options.open ||
         (
             ev.dx > 0 && options.position === 'left' &&
@@ -51,37 +37,37 @@ function _onDrag(sidenav, ev) {
         (
             ev.dx < 0 && options.position === 'right' &&
             window.innerWidth - ev.x <= options.swipeSensibility)) {
-        if (!sidenav.swiping) {
-            element.style.display = 'block';
-            sidenav.__saveStyle = sidenav.getAttribute('style');
-            sidenav.classList.add(options.swipeClass);
+        if (!this.swiping) {
+            this.style.display = 'block';
+            this.__saveStyle = this.getAttribute('style');
+            this.classList.add(options.swipeClass);
             if (!options.open) {
-                sidenav.classList.remove(options.hiddenClass);
-                BACK_DROP.show();
+                this.classList.remove(options.hiddenClass);
+                this.BACK_DROP.show();
             }
-            sidenav.swiping = true;
+            this.swiping = true;
         }
         let x;
         if (!options.open) {
             if (options.position === 'left') {
-                x = Math.min(-Math.max(element.offsetWidth - ev.dx, -element.offsetWidth), 0);
+                x = Math.min(-Math.max(this.offsetWidth - ev.dx, -this.offsetWidth), 0);
             } else {
-                x = Math.max(Math.min(element.offsetWidth + ev.dx, element.offsetWidth), 0);
+                x = Math.max(Math.min(this.offsetWidth + ev.dx, this.offsetWidth), 0);
             }
         } else {
             if (options.position === 'left') {
-                x = Math.max(Math.min(ev.dx, 0), -element.offsetWidth);
+                x = Math.max(Math.min(ev.dx, 0), -this.offsetWidth);
             } else {
-                x = Math.min(Math.max(ev.dx, 0), element.offsetWidth);
+                x = Math.min(Math.max(ev.dx, 0), this.offsetWidth);
             }
         }
-        element.style.webkitTransform = element.style.transform = `translate3d(${x}px, 0, 0)`;
-        if ((options.position === 'left' && x <= -element.offsetWidth) ||
-            (options.position === 'right' && x >= element.offsetWidth)) {
-            _onDragStop(sidenav, ev);
+        this.style.webkitTransform = this.style.transform = `translate3d(${x}px, 0, 0)`;
+        if ((options.position === 'left' && x <= -this.offsetWidth) ||
+            (options.position === 'right' && x >= this.offsetWidth)) {
+            _onDragStop.call(this, ev, lastEvent);
         }
     } else {
-        sidenav.swiping = false;
+        this.swiping = false;
     }
 }
 
@@ -105,30 +91,39 @@ export class SideNavComponent extends DNABaseComponent {
     }
 
     static add(obj) {
-        if (!this.listening && obj.options.swipe) {
-            this.listen();
-        }
         sidenavs.push(obj);
     }
 
-    static listen() {
+    listen() {
         if (!this.listening) {
             this.listening = true;
+            let wait;
+            let waitTimeout;
+            let lastEvent;
+            this.addEventListener('scroll', () => {
+                clearTimeout(waitTimeout);
+            });
             Gestures.addEventListener(document, 'track', (ev) => {
-                let _sidenavs = current ? [current] : sidenavs;
-                for (let k = 0, len = _sidenavs.length; k < len; k++) {
-                    let sn = _sidenavs[k];
-                    if (sn.options.swipe) {
-                        if (ev.state === 'track') {
-                            lastEvent = ev;
-                            _onDrag(sn, ev);
-                        } else if (ev.state === 'end') {
-                            _onDragStop(sn, ev);
+                if (this.options.swipe) {
+                    if (ev.state === 'start') {
+                        wait = this.options.open;
+                        if (wait) {
+                            waitTimeout = setTimeout(() => {
+                                wait = false;
+                            }, 100);
                         }
+                    } else if (ev.state === 'track') {
+                        if (!wait) {
+                            _onDrag.call(this, ev, lastEvent);
+                        }
+                        lastEvent = ev;
+                    } else if (ev.state === 'end') {
+                        if (!wait) {
+                            _onDragStop.call(this, lastEvent);
+                        }
+                        clearTimeout(waitTimeout);
+                        lastEvent = undefined;
                     }
-                }
-                if (ev.state === 'end') {
-                    lastEvent = undefined;
                 }
             });
         }
@@ -179,13 +174,20 @@ export class SideNavComponent extends DNABaseComponent {
     }
 
     createdCallback() {
+        super.createdCallback();
+        this.listen();
+        this.BACK_DROP = new BackDrop();
+        this.BACK_DROP.onTap(() => {
+            this.hide();
+        });
         this.options = this.defaultOptions;
         SideNavComponent.add(this);
     }
 
     show(force) {
-        if (current && current !== this) {
-            current.hide();
+        if (this.__hidingAnimation) {
+            this.__hidingAnimation.cancel();
+            delete this.__hidingAnimation;
         }
         let options = this.options;
         if (!options.open || force) {
@@ -197,8 +199,7 @@ export class SideNavComponent extends DNABaseComponent {
             if (options.hiddenClass) {
                 this.classList.remove(options.hiddenClass);
             }
-            BACK_DROP.show();
-            current = this;
+            this.BACK_DROP.show();
             if (!force) {
                 this.trigger('open');
             }
@@ -207,10 +208,11 @@ export class SideNavComponent extends DNABaseComponent {
 
     hide(force) {
         let options = this.options;
+        let wasOpen = options.open;
         if (options.open || force) {
             options.open = false;
             if (this.useTransitionSupport && TransitionSupport.supported) {
-                UI.transitionEnd(this, () => {
+                this.__hidingAnimation = UI.transitionEnd(this, () => {
                     this.style.display = 'none';
                 });
             } else {
@@ -219,11 +221,8 @@ export class SideNavComponent extends DNABaseComponent {
             if (options.hiddenClass) {
                 this.classList.add(options.hiddenClass);
             }
-            if (current === this) {
-                current = undefined;
-                BACK_DROP.hide();
-            }
-            if (!force) {
+            this.BACK_DROP.hide();
+            if (!force || wasOpen) {
                 this.trigger('close');
             }
         }
