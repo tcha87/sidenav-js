@@ -1,5 +1,5 @@
 import Gestures from 'chialab/gestures/index.js';
-import { register, DNABaseComponent } from 'dna/components';
+import { register, BaseComponent } from 'dna/components';
 import { TransitionSupport } from './helpers/transition-support.js';
 import { UI } from './helpers/ui.js';
 import { BackDrop } from './backdrop.js';
@@ -85,7 +85,7 @@ function _mergeOptions(defaults, options) {
     return options;
 }
 
-export class SideNavComponent extends DNABaseComponent {
+export class SideNavComponent extends BaseComponent {
     static get css() {
         return css;
     }
