@@ -7,6 +7,26 @@ import css from './sidenav.css';
 
 let sidenavs = [];
 
+function scrollParent(node, until = document.body) {
+    while (node && node !== until) {
+        if (node.scrollHeight > node.offsetHeight) {
+            let style = window.getComputedStyle(node);
+            let overflow = style.overflow;
+            let overflowY = style['overflow-y'];
+            if (
+                overflow === 'auto' ||
+                overflow === 'scroll' ||
+                overflowY === 'auto' ||
+                overflowY === 'scroll'
+            ) {
+                return node;
+            }
+        }
+        node = node.parentNode;
+    }
+    return null;
+}
+
 function _onDragStop(lastEvent) {
     if (this.swiping) {
         this.swiping = false;
@@ -100,15 +120,24 @@ export class SideNavComponent extends BaseComponent {
             let wait;
             let waitTimeout;
             let lastEvent;
-            this.addEventListener('scroll', () => {
+            let scrollPanel;
+            let onScroll = function(ev) {
+                ev.target.removeEventListener('scroll', onScroll);
                 clearTimeout(waitTimeout);
-            });
+            };
             Gestures.addEventListener(document, 'track', (ev) => {
                 if (this.options.swipe) {
                     if (ev.state === 'start') {
+                        scrollPanel = scrollParent(ev.target, this.parentNode);
+                        if (scrollPanel) {
+                            scrollPanel.addEventListener('scroll', onScroll);
+                        }
                         wait = this.options.open;
                         if (wait) {
                             waitTimeout = setTimeout(() => {
+                                if (scrollPanel) {
+                                    scrollPanel.removeEventListener('scroll', onScroll);
+                                }
                                 wait = false;
                             }, 100);
                         }
